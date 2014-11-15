@@ -20,4 +20,15 @@ describe('import', function(){
     });
     assert.deepEqual([1, 2], _import('foo', 'bar').from(library))
   })
+
+  it('should evaluate lazily', function(){
+    var evaluated = false,
+        library = _import(function (_export) {
+          _export('foo', (evaluated = true))
+        });
+    assert.equal(false, evaluated)
+    _import('foo').from(library)
+    assert.equal(true, evaluated)
+  })
+
 })
