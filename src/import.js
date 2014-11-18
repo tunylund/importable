@@ -1,29 +1,54 @@
 (function(define) {
 
-  function _once(fn, _export) {
-    var c;
-    return function() {
-      return c || (c = fn());
+  function createLibrary() {
+    var factories = [],
+        library = {};
+   
+    function api() {
+      if(arguments.length > 0) {
+        extend.apply(this, arguments)
+        return api;
+      } else {
+        consume();
+        return library;
+      }
+    };
+
+    function extend(factory) {
+      factories = factories.concat(Array.prototype.slice.call(arguments));
+    };
+
+    function _export(name, definition) { 
+      library[name] = definition; 
+    };
+    
+    function consume() {
+      var factory;
+      while(factory = factories.splice(0,1)[0]) {
+        factory(_export)
+      }
     }
+
+    return api;
+  }
+
+  function provide(requested) {
+    return {from: function(lib) {
+      for(var result = [], i=0, l=requested.length; i<l; i++) {
+        result.push(lib()[requested[i]])
+      }
+      return result.length == 1 ? result[0] : result
+    }}
   }
 
   define('_import', function _import(factory) {
 
     if(typeof factory === 'function') {
-      var library = {},
-          _export = function(name, definition) { library[name] = definition; };
-      return _once(function() {
-        factory(_export);
-        return library;
-      });
+      var library = createLibrary()
+      return library(factory);
     } else {
       var requested = Array.prototype.slice.call(arguments);
-      return {from: function(lib) {
-        for(var result = [], i=0, l=requested.length; i<l; i++) {
-          result.push(lib()[requested[i]])
-        }
-        return result.length == 1 ? result[0] : result
-      }}
+      return provide(requested)
     }
 
   })

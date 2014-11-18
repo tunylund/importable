@@ -31,4 +31,25 @@ describe('import', function(){
     assert.equal(true, evaluated)
   })
 
+  it('should allow extending', function() {
+    var library = _import(function (_export) {
+      _export('foo', 1)
+    });
+    library(function (_export) {
+      _export('bar', 2)
+    })
+    assert.deepEqual([1, 2], _import('foo', 'bar').from(library))
+  })
+
+  it('should not mix libraries', function() {
+    var libraryA = _import(function (_export) {
+      _export('foo', 1)
+    });
+    var libraryB = _import(function (_export) {
+      _export('foo', 2)
+    })
+    assert.equal(1, _import('foo').from(libraryA))
+    assert.equal(2, _import('foo').from(libraryB))
+  })
+
 })
