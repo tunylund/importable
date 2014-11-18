@@ -58,5 +58,5 @@
   //common (node)
   (typeof exports != 'undefined' || typeof module != 'undefined') ? function(n, d, f) { exports = module.exports = f || d || n } :
   //no-modules (window)
-  (function(n, d, f) {this[n] = f})
+  (function(n, d, f) {this[n] = f || d})
 ));
