@@ -26,14 +26,16 @@
   function provide(requirements) {
     return {
       from: function(librayName) {
-        var exports = libraries[librayName].consume();
+        var library = libraries[librayName];
+        if(!library) throw new Error("'" + librayName + "' has not been defined");
+        var exports = library.consume();
         for(var result = [], i=0, l=requirements.length; i<l; i++) {
           var requirementName = requirements[i],
               requirement = exports[requirementName];
           if(exports.hasOwnProperty(requirementName)) {
             result.push(requirement)
           } else {
-            throw "Requirement '" + requirementName + "' from '" + librayName + "' was not found";
+            throw new Error("Requirement '" + requirementName + "' from '" + librayName + "' was not found");
           }
         }
         return result.length == 1 ? result[0] : result
