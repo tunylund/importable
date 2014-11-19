@@ -1,69 +1,57 @@
 (function(define) {
 
-  function pk(parent, path) {
-    var paths = path.split("."),
-        ns = parent;
-    for(var i=0, l=paths.length; i<l; i++) {
-        ns = ns[paths[i]] || (ns[paths[i]] = {});
-    }
-    return ns;
-  }
-
   function Library() {
     var factories = [],
-        library = {};
+        exports = {};
    
-    function api() {
-      if(arguments.length > 0) {
-        extend.apply(this, arguments)
-        return api;
-      } else {
-        consume();
-        return library;
-      }
+    function _export(name, definition) { 
+      exports[name] = definition; 
     };
-
-    function extend(factory) {
+    
+    this.extend = function extend(factory) {
       factories = factories.concat(Array.prototype.slice.call(arguments));
     };
 
-    function _export(name, definition) { 
-      library[name] = definition; 
-    };
-    
-    function consume() {
+    this.consume = function consume() {
       var factory;
       while(factory = factories.splice(0,1)[0]) {
         factory(_export)
       }
+      return exports;
     }
-
-    return api;
-  }
-
-  function provide(requested) {
-    return {from: function(librayName) {
-      var library = libraries[librayName]();
-      for(var result = [], i=0, l=requested.length; i<l; i++) {
-        result.push(library[requested[i]])
-      }
-      return result.length == 1 ? result[0] : result
-    }}
   }
 
   var libraries = {};
-
-  define('_import', function _import(name, factory) {
-
-    if(typeof arguments[arguments.length-1] === 'function') {
-      libraries[name] = libraries[name] || new Library();
-      libraries[name](factory)
-    } else {
-      var requested = Array.prototype.slice.call(arguments);
-      return provide(requested)
+  
+  function provide(requirements) {
+    return {
+      from: function(librayName) {
+        var exports = libraries[librayName].consume();
+        for(var result = [], i=0, l=requirements.length; i<l; i++) {
+          var requirementName = requirements[i],
+              requirement = exports[requirementName];
+          if(exports.hasOwnProperty(requirementName)) {
+            result.push(requirement)
+          } else {
+            throw "Requirement '" + requirementName + "' from '" + librayName + "' was not found";
+          }
+        }
+        return result.length == 1 ? result[0] : result
+      }
     }
+  }
+  
+  function _import(requirements) {
+    requirements = Array.prototype.slice.call(arguments);
+    return provide(requirements);
+  }
 
-  })
+  _import.define = function _define(librayName, factory) {
+    libraries[librayName] = libraries[librayName] || new Library();
+    libraries[librayName].extend(factory)
+  }
+
+  define('_import', _import);
 
 }(//amd (requirejs)
   (typeof define === 'function' && define.amd) ? define :
