@@ -1,6 +1,15 @@
 (function(define) {
 
-  function createLibrary() {
+  function pk(parent, path) {
+    var paths = path.split("."),
+        ns = parent;
+    for(var i=0, l=paths.length; i<l; i++) {
+        ns = ns[paths[i]] || (ns[paths[i]] = {});
+    }
+    return ns;
+  }
+
+  function Library() {
     var factories = [],
         library = {};
    
@@ -33,19 +42,22 @@
   }
 
   function provide(requested) {
-    return {from: function(lib) {
+    return {from: function(librayName) {
+      var library = libraries[librayName]();
       for(var result = [], i=0, l=requested.length; i<l; i++) {
-        result.push(lib()[requested[i]])
+        result.push(library[requested[i]])
       }
       return result.length == 1 ? result[0] : result
     }}
   }
 
-  define('_import', function _import(factory) {
+  var libraries = {};
 
-    if(typeof factory === 'function') {
-      var library = createLibrary()
-      return library(factory);
+  define('_import', function _import(name, factory) {
+
+    if(typeof arguments[arguments.length-1] === 'function') {
+      libraries[name] = libraries[name] || new Library();
+      libraries[name](factory)
     } else {
       var requested = Array.prototype.slice.call(arguments);
       return provide(requested)
