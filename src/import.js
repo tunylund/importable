@@ -46,7 +46,7 @@
     return provide(requirements);
   }
 
-  _import.define = function _define(librayName, factory) {
+  _import.module = function _module(librayName, factory) {
     libraries[librayName] = libraries[librayName] || new Library();
     libraries[librayName].extend(factory)
   }
