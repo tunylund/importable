@@ -9,80 +9,80 @@ describe('import', function(){
   })
 
   it('should return the requested component', function(){
-    _import.module('library', function (_export) {
+    _import.module('module', function (_export) {
       _export('foo', 1);
     });
-    assert.equal(1, _import('foo').from('library'))
+    assert.equal(1, _import('foo').from('module'))
   })
 
   it('should throw on undefined components', function(){
-    _import.module('library', function (_export) {});
+    _import.module('module', function (_export) {});
     assert.throws(function() {
-      _import('foo').from('library')
+      _import('foo').from('module')
     })
   })
 
   it('should return an array of components when requested', function(){
-    _import.module('library', function (_export) {
+    _import.module('module', function (_export) {
       _export('foo', 1)
       _export('bar', 2)
     });
-    assert.deepEqual([1, 2], _import('foo', 'bar').from('library'))
+    assert.deepEqual([1, 2], _import('foo', 'bar').from('module'))
   })
 
   it('should evaluate lazily', function(){
     var evaluated = false
-    _import.module('library', function (_export) {
+    _import.module('module', function (_export) {
       _export('foo', (evaluated = true))
     });
     assert.equal(false, evaluated)
-    _import('foo').from('library')
+    _import('foo').from('module')
     assert.equal(true, evaluated)
   })
 
   it('should allow extending', function() {
-    _import.module('library', function (_export) {
+    _import.module('module', function (_export) {
       _export('foo', 1)
     });
-    _import.module('library', function (_export) {
+    _import.module('module', function (_export) {
       _export('bar', 2)
     })
-    assert.deepEqual([1, 2], _import('foo', 'bar').from('library'))
+    assert.deepEqual([1, 2], _import('foo', 'bar').from('module'))
   })
 
   it('should not mix libraries', function() {
-    _import.module('libraryA', function (_export) {
+    _import.module('moduleA', function (_export) {
       _export('foo', 1)
     });
-    _import.module('libraryB', function (_export) {
+    _import.module('moduleB', function (_export) {
       _export('foo', 2)
     })
-    assert.equal(1, _import('foo').from('libraryA'))
-    assert.equal(2, _import('foo').from('libraryB'))
+    assert.equal(1, _import('foo').from('moduleA'))
+    assert.equal(2, _import('foo').from('moduleB'))
   })
 
   it('should resolve dependencies', function() {
-    _import.module('libraryA', function (_export) {
+    _import.module('moduleA', function (_export) {
       _export('foo', 1)
     });
-    _import.module('libraryB', function (_export) {
-      var foo = _import('foo').from('libraryA')
+    _import.module('moduleB', function (_export) {
+      var foo = _import('foo').from('moduleA')
       _export('bar', foo + 1)
     })
-    assert.equal(1, _import('foo').from('libraryA'))
-    assert.equal(2, _import('bar').from('libraryB'))
+    assert.equal(1, _import('foo').from('moduleA'))
+    assert.equal(2, _import('bar').from('moduleB'))
   })
 
   it('should resolve dependencies independent of declaration order', function() {
-    _import.module('libraryA', function (_export) {
-      var bar = _import('bar').from('libraryB')
+    _import.module('moduleA', function (_export) {
+      var bar = _import('bar').from('moduleB')
       _export('foo', bar-1)
     });
-    _import.module('libraryB', function (_export) {
+    _import.module('moduleB', function (_export) {
       _export('bar', 2)
     })
-    assert.equal(1, _import('foo').from('libraryA'))
-    assert.equal(2, _import('bar').from('libraryB'))
+    assert.equal(1, _import('foo').from('moduleA'))
+    assert.equal(2, _import('bar').from('moduleB'))
   })
 
   it('should not confuse cyclisism when one part of a module depends on another part of the same module', function() {
@@ -98,19 +98,36 @@ describe('import', function(){
   })
 
   it('should raise on cyclic dependencies', function() {
-    _import.module('libraryA', function libraryA(_export) {
-      var bar = _import('bar').from('libraryB')
+    _import.module('moduleA', function moduleA(_export) {
+      var bar = _import('bar').from('moduleB')
       _export('foo', bar-1)
     });
-    _import.module('libraryB', function libraryB(_export) {
-      var foo = _import('foo').from('libraryA')
+    _import.module('moduleB', function moduleB(_export) {
+      var foo = _import('foo').from('moduleA')
       _export('bar', foo+1)
     })
     assert.throws(function() {
-      assert.equal(1, _import('foo').from('libraryA'))
+      assert.equal(1, _import('foo').from('moduleA'))
     });
     assert.throws(function() {
-      assert.equal(2, _import('bar').from('libraryB'))
+      assert.equal(2, _import('bar').from('moduleB'))
+    })
+  })
+
+  it('should raise on cyclic dependencies within a module', function() {
+    _import.module('module', function moduleA(_export) {
+      var bar = _import('bar').from('module')
+      _export('foo', bar-1)
+    });
+    _import.module('module', function moduleB(_export) {
+      var foo = _import('foo').from('module')
+      _export('bar', foo+1)
+    })
+    assert.throws(function() {
+      assert.equal(1, _import('foo').from('module'))
+    });
+    assert.throws(function() {
+      assert.equal(2, _import('bar').from('module'))
     })
   })
 })
