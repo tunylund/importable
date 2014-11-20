@@ -61,4 +61,44 @@ describe('import', function(){
     assert.equal(2, _import('foo').from('libraryB'))
   })
 
+  it('should resolve dependencies', function() {
+    _import.module('libraryA', function (_export) {
+      _export('foo', 1)
+    });
+    _import.module('libraryB', function (_export) {
+      var foo = _import('foo').from('libraryA')
+      _export('bar', foo + 1)
+    })
+    assert.equal(1, _import('foo').from('libraryA'))
+    assert.equal(2, _import('bar').from('libraryB'))
+  })
+
+  it('should resolve dependencies independent of declaration order', function() {
+    _import.module('libraryA', function (_export) {
+      var bar = _import('bar').from('libraryB')
+      _export('foo', bar-1)
+    });
+    _import.module('libraryB', function (_export) {
+      _export('bar', 2)
+    })
+    assert.equal(1, _import('foo').from('libraryA'))
+    assert.equal(2, _import('bar').from('libraryB'))
+  })
+
+  it('should raise on cyclic dependencies', function() {
+    _import.module('libraryA', function libraryA(_export) {
+      var bar = _import('bar').from('libraryB')
+      _export('foo', bar-1)
+    });
+    _import.module('libraryB', function libraryB(_export) {
+      var foo = _import('foo').from('libraryA')
+      _export('bar', foo+1)
+    })
+    assert.throws(function() {
+      assert.equal(1, _import('foo').from('libraryA'))
+    });
+    assert.throws(function() {
+      assert.equal(2, _import('bar').from('libraryB'))
+    })
+  })
 })

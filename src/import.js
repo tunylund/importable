@@ -1,8 +1,8 @@
 (function(define) {
 
-  function Library() {
+  function Module() {
     var factories = [],
-        exports = {};
+        exports = {}
    
     function _export(name, definition) { 
       exports[name] = definition; 
@@ -12,7 +12,7 @@
       factories = factories.concat(Array.prototype.slice.call(arguments));
     };
 
-    this.consume = function consume() {
+    this.resolve = function resolve() {
       var factory;
       while(factory = factories.splice(0,1)[0]) {
         factory(_export)
@@ -21,36 +21,40 @@
     }
   }
 
-  var libraries = {};
-  
-  function provide(requirements) {
-    return {
-      from: function(librayName) {
-        var library = libraries[librayName];
-        if(!library) throw new Error("'" + librayName + "' has not been defined");
-        var exports = library.consume();
-        for(var result = [], i=0, l=requirements.length; i<l; i++) {
-          var requirementName = requirements[i],
-              requirement = exports[requirementName];
-          if(exports.hasOwnProperty(requirementName)) {
-            result.push(requirement)
-          } else {
-            throw new Error("Requirement '" + requirementName + "' from '" + librayName + "' was not found");
-          }
-        }
-        return result.length == 1 ? result[0] : result
-      }
+  var modules = {},
+      dependencyStack = [],
+      resolvingStack = [];
+
+  function Require(requirements) {
+    this.requirements = requirements;
+  }
+  Require.prototype.from = function (moduleName) {
+    if(resolvingStack.indexOf(moduleName) > -1) throw new Error("Circular dependency while looking for '" + this.requirements + "' from '" + moduleName + "'.");
+    resolvingStack.push(moduleName)
+    
+    var module = modules[moduleName];
+    if(!module) throw new Error("'" + moduleName + "' has not been defined");
+    
+    var exports = module.resolve();
+    for(var result = [], i=0, l=this.requirements.length; i<l; i++) {
+      var requirementName = this.requirements[i],
+          requirement = exports[requirementName];
+      if(!exports.hasOwnProperty(requirementName)) throw new Error("Requirement '" + requirementName + "' from '" + moduleName + "' was not found");
+      result.push(requirement)
     }
+
+    resolvingStack.pop()
+    return result.length == 1 ? result[0] : result
   }
   
   function _import(requirements) {
     requirements = Array.prototype.slice.call(arguments);
-    return provide(requirements);
+    return new Require(requirements);
   }
 
-  _import.module = function _module(librayName, factory) {
-    libraries[librayName] = libraries[librayName] || new Library();
-    libraries[librayName].extend(factory)
+  _import.module = function _module(moduleName, factory) {
+    modules[moduleName] = modules[moduleName] || new Module();
+    modules[moduleName].extend(factory)
   }
 
   define('_import', _import);
