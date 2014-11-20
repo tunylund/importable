@@ -25,12 +25,10 @@
       dependencyStack = [],
       resolvingStack = [];
 
-  function Require(requirements) {
-    this.requirements = requirements;
-  }
+  function Require(requirements) { this.requirements = requirements; }
   Require.prototype.from = function (moduleName) {
-    if(resolvingStack.indexOf(moduleName) > -1) throw new Error("Circular dependency while looking for '" + this.requirements + "' from '" + moduleName + "'.");
-    resolvingStack.push(moduleName)
+    if(resolvingStack.indexOf(this.requirements + moduleName) > -1) throw new Error("Circular dependency while looking for '" + this.requirements + "' from '" + moduleName + "'.");
+    resolvingStack.push(this.requirements + moduleName)
     
     var module = modules[moduleName];
     if(!module) throw new Error("'" + moduleName + "' has not been defined");

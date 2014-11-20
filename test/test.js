@@ -85,6 +85,18 @@ describe('import', function(){
     assert.equal(2, _import('bar').from('libraryB'))
   })
 
+  it('should not confuse cyclisism when one part of a module depends on another part of the same module', function() {
+    _import.module('module', function module(_export) {
+      var bar = _import('bar').from('module')
+      _export('foo', bar-1)
+    });
+    _import.module('module', function module(_export) {
+      _export('bar', 2)
+    })
+    assert.equal(1, _import('foo').from('module'))
+    assert.equal(2, _import('bar').from('module'))
+  })
+
   it('should raise on cyclic dependencies', function() {
     _import.module('libraryA', function libraryA(_export) {
       var bar = _import('bar').from('libraryB')
