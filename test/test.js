@@ -19,7 +19,7 @@ describe('import', function(){
     _import.module('module', function (_export) {});
     assert.throws(function() {
       _import('foo').from('module')
-    })
+    }, /not found/)
   })
 
   it('should return an array of components when requested', function(){
@@ -81,8 +81,10 @@ describe('import', function(){
     _import.module('moduleB', function (_export) {
       _export('bar', 2)
     })
-    assert.equal(1, _import('foo').from('moduleA'))
-    assert.equal(2, _import('bar').from('moduleB'))
+    assert.doesNotThrow(function() {
+      assert.equal(1, _import('foo').from('moduleA'))
+      assert.equal(2, _import('bar').from('moduleB'))
+    })
   })
 
   it('should not confuse cyclisism when one part of a module depends on another part of the same module', function() {
@@ -91,6 +93,21 @@ describe('import', function(){
       _export('foo', bar-1)
     });
     _import.module('module', function module(_export) {
+      _export('bar', 2)
+    })
+    assert.equal(1, _import('foo').from('module'))
+    assert.equal(2, _import('bar').from('module'))
+  })
+
+  it('should not depend on declaration order', function() {
+    _import.module('module', function moduleA(_export) {
+      var bar = _import('bar').from('module')
+      _export('foo', bar-1)
+    });
+    _import.module('module', function moduleB(_export) {
+      var bar = _import('bar').from('module')
+    })
+    _import.module('module', function moduleC(_export) {
       _export('bar', 2)
     })
     assert.equal(1, _import('foo').from('module'))
@@ -108,10 +125,10 @@ describe('import', function(){
     })
     assert.throws(function() {
       assert.equal(1, _import('foo').from('moduleA'))
-    });
+    }, /Circular/);
     assert.throws(function() {
       assert.equal(2, _import('bar').from('moduleB'))
-    })
+    }, /Circular/);
   })
 
   it('should raise on cyclic dependencies within a module', function() {
@@ -125,9 +142,9 @@ describe('import', function(){
     })
     assert.throws(function() {
       assert.equal(1, _import('foo').from('module'))
-    });
+    }, /Circular/);
     assert.throws(function() {
       assert.equal(2, _import('bar').from('module'))
-    })
+    }, /Circular/);
   })
 })

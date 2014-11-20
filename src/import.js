@@ -12,12 +12,12 @@
       factories = factories.concat(Array.prototype.slice.call(arguments));
     };
 
-    this.resolve = function resolve() {
+    this.resolve = function resolve(requirementName) {
       var factory;
-      while(factory = factories.splice(0,1)[0]) {
+      while(typeof exports[requirementName] === "undefined" && (factory = factories.splice(0,1)[0])) {
         factory(_export)
       }
-      return exports;
+      return exports[requirementName];
     }
   }
 
@@ -27,7 +27,6 @@
 
   function Require(requirements) { this.requirements = requirements; }
   Require.prototype.from = function (moduleName) {
-    if(resolvingStack.indexOf(this.requirements + moduleName) > -1) throw new Error("Circular dependency while looking for '" + this.requirements + "' from '" + moduleName + "'.");
     resolvingStack.push(this.requirements + moduleName)
     
     var module = modules[moduleName];
@@ -36,8 +35,13 @@
     var exports = module.resolve();
     for(var result = [], i=0, l=this.requirements.length; i<l; i++) {
       var requirementName = this.requirements[i],
-          requirement = exports[requirementName];
-      if(!exports.hasOwnProperty(requirementName)) throw new Error("Requirement '" + requirementName + "' from '" + moduleName + "' was not found");
+          requirement = module.resolve(requirementName)
+      if(typeof requirement === "undefined") {
+        if(resolvingStack.indexOf(this.requirements + moduleName) < resolvingStack.length-1) 
+          throw new Error("Circular dependency while looking for '" + this.requirements + "' from '" + moduleName + "'.");
+        else 
+          throw new Error("Requirement '" + requirementName + "' from '" + moduleName + "' was not found");
+      }
       result.push(requirement)
     }
 
