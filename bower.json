@@ -1,0 +1,33 @@
+{
+  "name": "importable",
+  "version": "0.1.0",
+  "homepage": "https://github.com/tunylund/importable",
+  "authors": [
+    "Tuomas Nylund <tunylund@gmail.com>"
+  ],
+  "description": "A rather exploratory attempt for playing with ecmascript 6 modules syntax in legacy browsers",
+  "main": "src/import.js",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "modules",
+    "module",
+    "import",
+    "export",
+    "dependency",
+    "injection",
+    "di"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
