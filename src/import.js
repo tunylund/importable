@@ -1,84 +1,81 @@
 (function(define) {
 
   function Module(moduleName) {
-    var factories = [],
-        exports = {},
-        index = {}
+    
+    var exports = {},
+        factories = {};
    
     function _export(name, definition) { 
       exports[name] = definition; 
-      delete index[name];
-    };
-    
-    function consume(factory) {
-      for(var i in index) {
-        if(index[i] === factory) {
-          delete index[i];
-        }
-      }
-      factories.splice(factories.indexOf(factory), 1);
-      factory(_export)
     }
 
-    this.extend = function extend(factory) {
-      factories.push(factory);
-    };
+    function _consume(name) {
+      if (!exports.hasOwnProperty(name)) {
+        var factory = factories[name];
+        if (factory) factory(_export)
+        else throw new Error("Requirement '" + name + "' is not met by '" + moduleName + "'.");
+      }
+    }
+    
+    this.reset = function reset() {
+      exports = {}
+    }
 
     this.promise = function promise(promises, factory) {
       var args = Array.prototype.slice.call(arguments),
           factory = args.pop();
       while(p = args.pop()) {
-        index[p] = factory;
+        factories[p] = factory;
       }
-      factories.push(factory)
+      return this;
     }
 
     this.resolve = function resolve(requirementName) {
-      if(requirementName) {
-        var factory = index[requirementName];
-        if (factory) consume(factory)
-        return exports[requirementName];
-      } else {
-        var e = [];
-        while(factory = factories.pop()) {
-          e.push(consume(factory))
-        }
-        return e;
-      }
+      exports[requirementName] || _consume(requirementName)
+      return exports[requirementName];
     }
+
   }
 
   var modules = {},
       dependencyStack = [],
       resolvingStack = [];
 
-  function Require(requirements) { this.requirements = requirements; }
-  Require.prototype.from = function (moduleName) {
+  function resolve(requirements, moduleName) {
     var _module = modules[moduleName];
-    if(!_module) throw new Error("'" + moduleName + "' has not been defined");
+    
+    if(!_module) {
+      throw new Error("'" + moduleName + "' has not been defined");
+    }
     
     var result = [],
         requirementName,
-        requirement;
-    while(requirementName = this.requirements.splice(0,1)[0]) {
-      resolvingStack.push(requirementName + moduleName)
-      requirement = _module.resolve(requirementName)
-      if(typeof requirement === "undefined") {
-        if(resolvingStack.indexOf(requirementName + moduleName) < resolvingStack.length-1) 
-          throw new Error("Circular dependency while looking for '" + requirementName + "' from '" + moduleName + "'.");
-        else 
-          throw new Error("Requirement '" + requirementName + "' is not met by '" + moduleName + "'.");
+        requirement,
+        stackName;
+    
+    while (requirementName = requirements.splice(0,1)[0]) {
+      
+      stackName = moduleName + '.' + requirementName
+      if (resolvingStack.indexOf(stackName) > -1) {
+        throw new Error("Circular dependency while looking for '" + requirementName + "' from '" + moduleName + "'.");
       }
+      
+      resolvingStack.push(stackName)
+      requirement = _module.resolve(requirementName)
       result.push(requirement)
       resolvingStack.pop()
     }
 
     return result.length == 1 ? result[0] : result
   }
-  
+
   function _import(requirements) {
-    requirements = Array.prototype.slice.call(arguments);
-    return new Require(requirements);
+    var reqs = Array.prototype.slice.call(arguments)
+    return {
+      from: function(moduleName) {
+        return resolve(reqs, moduleName);
+      }
+    }
   }
 
   _import.module = function _module(moduleName) {

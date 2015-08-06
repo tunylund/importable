@@ -1,6 +1,7 @@
 var assert = require("assert"),
     path = require("path"),
     _import;
+
 describe('import', function(){
 
   beforeEach(function() {
@@ -144,4 +145,20 @@ describe('import', function(){
       assert.equal(2, _import('bar').from('module'))
     }, /Circular/);
   })
+
+  it('should allow resetting evaluation state', function() {
+    var evaluationCount = 0
+    _import.module('module').promise('foo', function moduleA(_export) {
+      evaluationCount++
+      _export('foo', 1)
+    });
+    _import('foo').from('module')
+    assert.equal(1, evaluationCount)
+    _import('foo').from('module')
+    assert.equal(1, evaluationCount)
+    _import.module('module').reset()
+    _import('foo').from('module')
+    assert.equal(2, evaluationCount)
+  })
+
 })
